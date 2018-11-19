@@ -14,9 +14,18 @@ A Plugins for PocketMine-MP. NewClickGame by Teaclon/TeaTech. This is a super Ga
     * Copyright (c) 2017-2018 TeaTech All right Reserved.
 
 
+## Prerequisite
+> To ensure better plugin compatibility, the plugin is compatible with the TSeriesAPI for two-way compatibility, so that you need to install the TSeriesAPI before launching the plugin.
+
+#### How to get TSeriesAPI?
+	User in China: QQ-Gruop 98331463 (小锤锤的杂货店)
+	User in International-1: Discord Teaclon_Jay#1028 (my private account code)
+	User in International-2: http://phar.teacraft.top/download.php?p=tsapi (not finish now)
+
+
 ## Plugin video display website
-- China: 
-- International(YouTube): **https://www.youtube.com/watch?v=Al_jfxLjvwc&feature=youtu.be**
+- China(Bilibili): 
+- International(YouTube): **https://www.youtube.com/watch?v=Al_jfxLjvwc**
 
 
 ## What is "NewClickGame"?
