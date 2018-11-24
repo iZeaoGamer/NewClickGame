@@ -86,13 +86,21 @@ class CountdownTask extends PluginTask
 				
 				$this->player->sendTip($this->plugin::NORMAL_PRE.$message);
 				$clicktime = $this->plugin->getTempPlayerDataWith($n, "clicktime");
-				$this->player->sendMessage($this->plugin::NORMAL_PRE."§a你点击了 §b{$clicktime} §a次~");
-				$this->plugin->getServer()->broadcastMessage($this->plugin::NORMAL_PRE.$os."§a玩家 §e{$this->temp_name} §a点击了 §b{$clicktime} §a次~");
+				if($clicktime > 0)
+				{
+					$this->player->sendMessage($this->plugin::NORMAL_PRE."§a你点击了 §b{$clicktime} §a次~");
+					$this->plugin->getServer()->broadcastMessage($this->plugin::NORMAL_PRE.$os."§a玩家 §e{$this->temp_name} §a点击了 §b{$clicktime} §a次~");
+				}
+				else
+				{
+					$this->player->sendMessage($this->plugin::NORMAL_PRE."§e兄弟, 多练练手速哇, 你也忒慢了, 游戏都超时了~");
+					$this->plugin->getServer()->broadcastMessage($this->plugin::NORMAL_PRE.$os."§e玩家 §e{$this->temp_name} §e手残了, 没点到漂亮的方块~");
+				}
 				$this->plugin->getServer()->broadcastMessage($this->plugin::NORMAL_PRE.$os."§d场地:  §e{$ln} §f- §e{$this->station_id}; §d时间: §e{$ct} §d秒");
 				$this->plugin->savePlayerInTempStationData($n, $this->station_id);
 				$this->plugin->resetStation($this->station_id);
 				$this->plugin->removePlayerInStation($n, $this->station_id);
-				$this->plugin->getTSApi()->getTaskManager()->cancelTask($this);
+				$this->plugin->getTSApi()->getTaskManager()->cancelTask($this, \false);
 				unset($this->plugin, $this->player, $this->station_id, $n, $info, $clicktime, $message, $ct);
 			}
 		}

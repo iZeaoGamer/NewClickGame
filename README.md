@@ -24,7 +24,7 @@ A Plugins for PocketMine-MP. NewClickGame by Teaclon/TeaTech. This is a super Ga
 
 
 ## Plugin video display website
-- China(Bilibili): 
+- China(Bilibili): **https://www.bilibili.com/video/av36348089**
 - International(YouTube): **https://www.youtube.com/watch?v=Al_jfxLjvwc**
 
 
@@ -45,16 +45,33 @@ A Plugins for PocketMine-MP. NewClickGame by Teaclon/TeaTech. This is a super Ga
 - [x] Game venue configuration file management
 - [x] Quickly transfer players to any game venue
 - [x] Modify game venue data online and take effect immediately
+- [x] FloatingText leaderboard
 
 
-### TODO LIST
-- [ ] FloatingText leaderboard
-- [ ] start game deduction money (custom modify from Config)
-- [ ] ????????????????????????????
+##### TODO LIST
+- [ ] Start game deduction money (custom modify from Config)
+- [ ] English configuration
+- [ ] English description messages in game
+- [ ] Multi-languages packets
+- [ ] HAHAHAHAHAHHAHAHAHAHAHAHAAHAHAAAHAHAHA
+
+
+## About FloatingText leaderboard
+> This FloatingText leaderboard is an independent leaderboard, which means that no matter how many game venues are set, he will focus on one place. You can set the maximum number of venues displayed per page (default is only 2 venues per page).
+> ``` php
+> // config index in code:
+> const CONFIG_FLOATINGTEXT_LEADERBOARD = '浮空字排行榜';
+> const CONFIG_LEADERBOARD_DISPLAY_PER_PAGE = "排行榜每页最大显示数量";
+> ```
+> ``` yaml
+>  浮空字排行榜: true
+>  排行榜每页最大显示数量: 2
+> ```
+
 
 
 ## Plugin Copyright & Statement
 	* Copyright Teaclon © 2018 All right Reserved.
-	* This plugin code complies with the GPL code open source license open source, please abide by this license to use this code.
+	* This plugin code complies with the GPL3 license open source, please abide by this license to use this code.
 	* Reprinted or used for commercial purposes, please be sure to inform the author, and indicate the original author of the code.
 	* If you comply with the above statement, you will be eligible for this code.

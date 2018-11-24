@@ -163,7 +163,7 @@ class MainCommand extends BaseCommand
 					$this->sendMessage($sender, "§c你没有权限使用这个指令.");
 					return true;
 				}
-				if(!$this->getCacheSettingInfo($sender))
+				if(!$this->getCacheSettingInfo($sender, \false))
 				{
 					$this->sendMessage($sender, "§c你不需要取消任何东西.");
 					return true;
@@ -272,8 +272,8 @@ class MainCommand extends BaseCommand
 				
 				if(!isset($args[1], $args[2]))
 				{
-					$this->sendMessage($sender, "§d/§6cl modify §f<§e游戏节点§f> win10                §f设置该游戏场地是否允许win10用户使用");
-					$this->sendMessage($sender, "§d/§6cl modify §f<§e游戏节点§f> countdown §f<§etime§f>     §f设置该游戏场地的游戏时间");
+					$this->sendMessage($sender, "§d/§6".self::MY_COMMAND." modify §f<§e游戏节点§f> win10                §f设置该游戏场地是否允许win10用户使用");
+					$this->sendMessage($sender, "§d/§6".self::MY_COMMAND." modify §f<§e游戏节点§f> countdown §f<§etime§f>     §f设置该游戏场地的游戏时间");
 					return true;
 				}
 				if(!$this->plugin->station()->exists($args[1]))
@@ -284,7 +284,7 @@ class MainCommand extends BaseCommand
 				switch($args[2])
 				{
 					default:
-						$this->sendMessage($sender, "§c指令使用错误, 请输入 §d/§6cl modify §c查看帮助.");
+						$this->sendMessage($sender, "§c指令使用错误, 请输入 §d/§6".self::MY_COMMAND." modify §c查看帮助.");
 					break;
 					
 					
@@ -318,7 +318,101 @@ class MainCommand extends BaseCommand
 			
 			
 			
+			case "ft":
+			case "fkz":
+			case "浮空字":
+			case "浮空字排行榜":
+				if(!$sender instanceof Player)
+				{
+					$this->sendMessage($sender, "§c请在游戏内使用这个指令.");
+					return true;
+				}
+				if($args[0] === "fkz" || $args[0] === "浮空字" || $args[0] === "浮空字排行榜") $args[0] = "ft";
+				if(!$this->hasSenderPermission($sender, $args[0]))
+				{
+					$this->sendMessage($sender, "§c你没有权限使用这个指令.");
+					return true;
+				}
+				
+				if(!isset($args[1]))
+				{
+					$this->sendMessage($sender, "用法: §d/§6".self::MY_COMMAND." ft spawn§f|§6edit§f|§6tphere§f|§6tpto§f|§6del    §e生成§f|§e编辑§f|§e传送到这里§f|§e传送到那去§f|§e删除§f浮空字排行榜");
+					return true;
+				}
+				switch($args[1])
+				{
+					default:
+						$this->sendMessage($sender, "§c指令使用错误, 请输入 §d/§6".self::MY_COMMAND." ft §c查看帮助.");
+					break;
+					
+					
+					case "spawn":
+						$pos = $sender->getFloorX().Main::VECTOR_DIVISION.$sender->getFloorY().Main::VECTOR_DIVISION.$sender->getFloorZ().Main::VECTOR_DIVISION.$sender->getLevel()->getName();
+						$this->plugin->config()->set(Main::CONFIG_LEADERBOARD_POSITION, $pos);
+						$this->plugin->config()->save();
+						$this->sendMessage($sender, "§a浮空字排行榜坐标数据保存成功, 准备生成浮空字...");
+						$this->plugin->spawnFloatingText();
+						return true;
+					break;
+					
+					
+					case "edit":
+						if(!isset($args[2]) || (isset($args[2]) && !is_numeric($args[2])))
+						{
+							$this->sendMessage($sender, "用法: §d/§6".self::MY_COMMAND." ft edit §f<§e显示数量§f> 设置浮空字排行榜每页显示的场地数量");
+							return true;
+						}
+						if((int) $args[2] > 5)
+						{
+							$this->sendMessage($sender, "§c显示数量过多会导致浮空字排行榜拥挤, 不建议设置过多数据挤在同一页面.");
+							return true;
+						}
+						$this->plugin->config()->set(Main::CONFIG_LEADERBOARD_DISPLAY_PER_PAGE, $args[2]);
+						$this->plugin->config()->save();
+						$this->sendMessage($sender, "§a浮空字排行榜显示状态已设置为: §d{$args[2]}§e个场地数据§f/§e页");
+						return true;
+					break;
+					
+					
+					case "tphere":
+						$pos = $sender->getFloorX().Main::VECTOR_DIVISION.$sender->getFloorY().Main::VECTOR_DIVISION.$sender->getFloorZ().Main::VECTOR_DIVISION.$sender->getLevel()->getName();
+						$this->plugin->config()->set(Main::CONFIG_LEADERBOARD_POSITION, $pos);
+						$this->plugin->config()->save();
+						$this->plugin->config()->reload();
+						$this->sendMessage($sender, "§a已将浮空字排行榜坐标移动到你当前的位置.");
+						return true;
+					break;
+					
+					
+					case "tpto":
+						$pos = $this->plugin->getVector($this->plugin->config()->get(Main::CONFIG_LEADERBOARD_POSITION));
+						$pos = new \pocketmine\level\Position((float) $pos[0], (float) $pos[1], (float) $pos[2], $this->plugin->getServer()->getLevelByName($pos[3]));
+						$sender->teleport($pos);
+						$this->sendMessage($sender, "§a已将你传送到浮空字排行榜的坐标位置.");
+						return true;
+					break;
+					
+					
+					case "del":
+						$this->plugin->shutdownFloatingText();
+						$this->plugin->config()->set(Main::CONFIG_LEADERBOARD_POSITION, \null);
+						$this->plugin->config()->save();
+						$this->sendMessage($sender, "§a浮空字排行榜坐标数据清除成功.");
+						return true;
+					break;
+				}
+				return true;
+			break;
 			
+			
+			case "reload":
+				$this->plugin->config()->reload();
+				$this->plugin->station()->reload();
+				// $this->plugin->config()->save();
+				// $this->plugin->station()->save();
+						$this->sendMessage($sender, "§a配置文件重载完成.");
+				return true;
+			break;
 			
 			
 			
@@ -387,6 +481,8 @@ class MainCommand extends BaseCommand
 			"wait"   => [self::PERMISSION_CONSOLE, self::PERMISSION_ADMINO, self::PERMISSION_ADMINT, self::PERMISSION_OP],
 			"win10"  => [self::PERMISSION_CONSOLE, self::PERMISSION_ADMINO, self::PERMISSION_ADMINT, self::PERMISSION_OP],
 			"modify" => [self::PERMISSION_CONSOLE, self::PERMISSION_ADMINO, self::PERMISSION_ADMINT, self::PERMISSION_OP],
+			"ft"     => [self::PERMISSION_CONSOLE, self::PERMISSION_ADMINO, self::PERMISSION_ADMINT, self::PERMISSION_OP],
+			"reload" => [self::PERMISSION_CONSOLE, self::PERMISSION_ADMINO, self::PERMISSION_ADMINT, self::PERMISSION_OP],
 			#-------------------------------------------#;
 			"join"   => [self::PERMISSION_ALL],
 			"tp"     => [self::PERMISSION_ALL],
@@ -400,27 +496,32 @@ class MainCommand extends BaseCommand
 	{
 		return 
 		[
-			"set"    => "用法: §d/§6{cmd} set §f<§e节点ID§f> §f<§e倒计时秒§f>  §a添加§f一个游戏节点",
-			"del"    => "用法: §d/§6{cmd} del §f<§e节点ID§f>             §c删除§f一个游戏节点",
-			"admin"  => "用法: §d/§6{cmd} admin §f<§e管理员名称§f>       设置或移除一个游戏节点管理员",
-			"cancel" => "用法: §d/§6{cmd} cancel                   §f清空当前的设置状态",
-			"wait"   => "用法: §d/§6{cmd} wait §f<§e等待时间秒§f>        设置玩家的默认等待时间(全部游戏节点统一设置)",
-			"win10"  => "用法: §d/§6{cmd} win10                    §f设置默认配置文件, 游戏节点是否允许WIN10玩家使用",
-			"modify" => "用法: §d/§6{cmd} modify §f<§e节点ID§f>          §f管理一个游戏节点",
+			"set"    => "用法: §d/§6{cmd} set §f<§e节点ID§f> §f<§e倒计时秒§f>          §a添加§f一个游戏节点",
+			"del"    => "用法: §d/§6{cmd} del §f<§e节点ID§f>                     §c删除§f一个游戏节点",
+			"admin"  => "用法: §d/§6{cmd} admin §f<§e管理员名称§f>               设置或移除一个游戏节点管理员",
+			"cancel" => "用法: §d/§6{cmd} cancel                           §f清空当前的设置状态",
+			"wait"   => "用法: §d/§6{cmd} wait §f<§e等待时间秒§f>                设置玩家的默认等待时间(全部游戏节点统一设置)",
+			"win10"  => "用法: §d/§6{cmd} win10                            §f设置默认配置文件, 游戏节点是否允许WIN10玩家使用",
+			"modify" => "用法: §d/§6{cmd} modify §f<§e节点ID§f>                  §f管理一个游戏节点",
+			"ft"     => "用法: §d/§6{cmd} ft spawn§f|§6edit§f|§6tphere§f|§6tpto§f|§6del    §e生成§f|§e编辑§f|§e传送到这里§f|§e传送到那去§f|§e删除§f浮空字排行榜",
+			"reload"     => "用法: §d/§6{cmd} reload                           §f重载并保存配置文件",
 			#-------------------------------------------#;
-			"join"   => "用法: §d/§6{cmd} join §f<§e节点ID§f>            §f加入一个游戏节点",
-			"tp"     => "用法: §d/§6{cmd} tp §f<§e节点ID§f>              §f传送到一个游戏节点",
+			"join"   => "用法: §d/§6{cmd} join §f<§e节点ID§f>                    §f加入一个游戏节点",
+			"tp"     => "用法: §d/§6{cmd} tp §f<§e节点ID§f>                      §f传送到一个游戏节点",
 		];
 	}
 	
 	
-	private function getCacheSettingInfo(CommandSender $sender)
+	private function getCacheSettingInfo(CommandSender $sender, bool $display =\true)
 	{
 		$info = $this->plugin->getCacheSettingInfo($sender->getName());
 		if(count($info) > 0)
 		{
-			$this->sendMessage($sender, "§c你正在设置游戏节点 §e".$info["name"]." §c, 请将此节点设置完成之后再设置其他节点.");
-			$this->sendMessage($sender, "§c你也可以使用指令 §f\"§d/§6".self::MY_COMMAND." cancel§f\" 取消该节点的设置.");
+			if($display)
+			{
+				$this->sendMessage($sender, "§c你正在设置游戏节点 §e".$info["name"]." §c, 请将此节点设置完成之后再设置其他节点.");
+				$this->sendMessage($sender, "§c你也可以使用指令 §f\"§d/§6".self::MY_COMMAND." cancel§f\" 取消该节点的设置.");
+			}
 			unset($info);
 			return true;
 		}

@@ -115,9 +115,9 @@ class PlayerInStationWaitingTask extends PluginTask
 						$p->sendMessage($message);
 				
 					$num = (count($this->plugin->temp_level_with_station[$ln]) > 1) ? "多" : "单";
-					$this->plugin->getServer()->broadcastMessage($this->plugin::NORMAL_PRE."§f[§6{$num}§e场地§f] §d玩家 §b{$n} §d加入了位于世界 §a{$ln} §d的游戏场地 §e{$this->station_id} §d.");
+					$this->plugin->getServer()->broadcastMessage($this->plugin::NORMAL_PRE."§f[§6{$num}§e场地§f] §d玩家 §b{$n} §d加入了位于世界 §a{$ln} §d的游戏场地 §e".($this->plugin->station()->get($this->station_id)["name"])." §d.");
 					$this->plugin->initPlayerInStation($p, $this->station_id);
-					$this->plugin->getTSApi()->getTaskManager()->registerTask("scheduleRepeatingTask", new CountdownTask($this->plugin, $p, $this->station_id), 20);
+					$this->plugin->getTSApi()->getTaskManager()->registerTask("scheduleRepeatingTask", new CountdownTask($this->plugin, $p, $this->station_id), 20, \false);
 					$this->plugin->getTSApi()->getTaskManager()->cancelTask($this);
 					unset($this->plugin, $p, $this->station_id, $n, $countdown, $ln, $num, $message);
 				}

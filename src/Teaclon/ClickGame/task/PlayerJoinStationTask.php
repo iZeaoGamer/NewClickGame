@@ -63,14 +63,14 @@ class PlayerJoinStationTask extends PluginTask
 					{
 						$s_con  = $this->con->get($station);
 						$s      = $s_con["start_point"];
-						$s_name = $s_con["name"];
+						$s_name = $station;
 						
 						if($this->plugin->getTempPlayerDataWith($n, "waiting_status") || $this->plugin->getTempPlayerDataWith($n, "isJoin")) return null;
 						if($this->plugin->getTempStationData($s_con["name"])["status"]) return null;
 						if(($ln === $s_con["level"]) && ($px == $s[0]) && ($py - 1 == $s[1]) && ($pz == $s[2]))
 						{
 							if($this->plugin->setTempPlayerData($n, "waiting_status", true))
-						$this->plugin->getTSApi()->getTaskManager()->registerTask("scheduleRepeatingTask", new PlayerInStationWaitingTask($this->plugin, $p, $s_name), 20);
+						$this->plugin->getTSApi()->getTaskManager()->registerTask("scheduleRepeatingTask", new PlayerInStationWaitingTask($this->plugin, $p, $s_name), 20, \false);
 							// unset($s_con, $s, $n, $ln, $px, $py, $pz, $s_con, $s);
 						}
 					}
@@ -79,7 +79,7 @@ class PlayerJoinStationTask extends PluginTask
 				else
 				{
 					$s_con   = $this->con->get($stations[0]);
-					$s_name  = $s_con["name"];
+					$s_name  = $stations[0];
 					$s_level = $s_con["level"];
 					$s       = $s_con["start_point"];
 					
@@ -88,7 +88,7 @@ class PlayerJoinStationTask extends PluginTask
 					if(($ln === $s_level) && ($px == $s[0]) && ($py - 1 == $s[1]) && ($pz == $s[2]))
 					{
 						if($this->plugin->setTempPlayerData($n, "waiting_status", true))
-					$this->plugin->getTSApi()->getTaskManager()->registerTask("scheduleRepeatingTask", new PlayerInStationWaitingTask($this->plugin, $p, $s_name), 20);
+					$this->plugin->getTSApi()->getTaskManager()->registerTask("scheduleRepeatingTask", new PlayerInStationWaitingTask($this->plugin, $p, $s_name), 20, \false);
 						// unset($s_con, $s, $n, $ln, $px, $py, $pz, $s_con, $s);
 					}
 				}

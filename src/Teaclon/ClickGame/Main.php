@@ -27,35 +27,43 @@ use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\player\PlayerInteractEvent;
 
+use pocketmine\entity\Entity;
 use pocketmine\entity\Effect;
 use pocketmine\math\Vector3;
+use pocketmine\level\Position;
 use pocketmine\block\Block;
 use pocketmine\block\Glass;
 use pocketmine\block\Grass;
 use pocketmine\block\Gold;
 use pocketmine\block\Quartz;
+use pocketmine\item\ItemFactory as ItemF;
+use pocketmine\item\Item;
 
 
 
 
-// TODO: 一会写排行榜, 和临时场地的数据转存;
+// TODO: 是否仅限WIN10用户;
 class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Listener
 {
 	const STRING_PRE    = "NewClickGame";                     // 插件名称;
-	const NORMAL_PRE   = "§e[§b".self::STRING_PRE."§e] §f";   // 插件称号;
-	const BLOCKMARK    = "草方块";                           // 需要点击什么方块才能设置游戏节点;
-	const BLOCKMARK_ID = Block::GRASS;                       // 方块信息;
-	const XDISTANCE    = 3;                                  // X轴算法;
-	const GYDISTANCE   = 1;                                  // Y轴 + Block::GLASS 算法;
-	const QYDISTANCE   = 2;                                  // X轴 + Block::Quartz 算法;
+	const NORMAL_PRE    = "§e[§b".self::STRING_PRE."§e] §f";  // 插件称号;
+	const BLOCKMARK     = "草方块";                           // 需要点击什么方块才能设置游戏节点;
+	const BLOCKMARK_ID  = Block::GRASS;                       // 方块信息;
+	const XDISTANCE     = 3;                                  // X轴算法;
+	const GYDISTANCE    = 1;                                  // Y轴 + Block::GLASS  算法;
+	const QYDISTANCE    = 2;                                  // X轴 + Block::Quartz 算法;
 	
 	// Config;
-	const CONFIG_WIN10_USER_DISABLE          = "禁止WIN10用户使用";
-	const CONFIG_PARTICLE_APPLY              = "粒子特效";
-	const CONFIG_FLOATINGTEXT_LEADERBOARD    = "浮空字排行榜";
-	const CONFIG_ADMIN_LIST                  = "管理员名单";
-	const CONFIG_DEFAULT_PLAYER_WAITING_TIME = "玩家默认等待时间";
-	const CONFIG_DEFAULT_COUNTDOWN           = "默认倒计时秒";
+	const CONFIG_WIN10_USER_DISABLE           = "禁止WIN10用户使用";
+	const CONFIG_PARTICLE_APPLY               = "粒子特效";
+	const CONFIG_ADMIN_LIST                   = "管理员名单";
+	const CONFIG_DEFAULT_PLAYER_WAITING_TIME  = "玩家默认等待时间";
+	const CONFIG_DEFAULT_COUNTDOWN            = "默认倒计时秒";
+	const CONFIG_FLOATINGTEXT_LEADERBOARD     = "浮空字排行榜";
+	const CONFIG_LEADERBOARD_DISPLAY_PER_PAGE = "排行榜每页最大显示数量";
+	const CONFIG_LEADERBOARD_POSITION         = "浮空字排行榜显示坐标";
+	// const CONFIG_LEADERBOARD_DISPLAY_FORMAT   = "排行榜显示格式";
+	const VECTOR_DIVISION      = "[AB]";
 	
 	// 其他参数;
 	// const DEFAULT_PLAYER_WAITING_TIME = 10; // 玩家默认等待时间;
@@ -66,6 +74,7 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 	private $server         = null; // \pocketmine\Server;
 	private $setting_cache  = [];   // 使用指令设置场地的临时转存数组;
 	private $tsapi          = null; // 用于获取一个玩家的数据;
+	private $entityId       = null;
 	
 	private $default_index  = // 生成一个场地的默认配置文件;
 	[
@@ -125,12 +134,15 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 		if(!is_dir($this->getDataFolder())) mkdir($this->getDataFolder(), 0777, true);
 		$this->config  = new Config($this->getDataFolder()."config.yml", Config::YAML, 
 		[
-			self::CONFIG_WIN10_USER_DISABLE          => false,
-			self::CONFIG_PARTICLE_APPLY              => true,
-			self::CONFIG_FLOATINGTEXT_LEADERBOARD    => true,
-			self::CONFIG_ADMIN_LIST                  => [],
-			self::CONFIG_DEFAULT_COUNTDOWN           => $this->default_temp_station_data["countdown"],
-			self::CONFIG_DEFAULT_PLAYER_WAITING_TIME => $this->default_temp_player_data["waiting_time"],
+			self::CONFIG_WIN10_USER_DISABLE           => false,
+			self::CONFIG_PARTICLE_APPLY               => true,
+			self::CONFIG_ADMIN_LIST                   => [],
+			self::CONFIG_DEFAULT_COUNTDOWN            => $this->default_temp_station_data["countdown"],
+			self::CONFIG_DEFAULT_PLAYER_WAITING_TIME  => $this->default_temp_player_data["waiting_time"],
+			self::CONFIG_FLOATINGTEXT_LEADERBOARD     => true,
+			self::CONFIG_LEADERBOARD_DISPLAY_PER_PAGE => 2,
+			self::CONFIG_LEADERBOARD_POSITION         => "",
+			// self::CONFIG_LEADERBOARD_DISPLAY_FORMAT  => base64_encode(""),
 		]);
 		$ALL = $this->config->getAll();
 		
@@ -174,6 +186,7 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 		
 		$this->tsapi->getCommandManager()->registerCommand(new command\MainCommand($this));
 		$this->tsapi->getTaskManager()->registerTask("scheduleRepeatingTask", new task\PlayerJoinStationTask($this), 20);
+		$this->spawnFloatingText();
 	}
 	
 	public function onDisable()
@@ -182,6 +195,125 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 	}
 	
 	
+	
+	
+	
+	
+	
+	public final function spawnFloatingText()
+	{
+		if($this->config()->get(self::CONFIG_LEADERBOARD_POSITION) === "") return \false;
+		$this->tsapi->getTaskManager()->createCallbackTask($this, "scheduleRepeatingTask", "addFloatingText", [], 20 * 5);
+		$this->tsapi->getTaskManager()->createCallbackTask($this, "scheduleDelayedTask", "updateNetworkPacket", [], 20 * 5.99);
+	}
+	
+	
+	private $temp_page = ["all_key" => [], "start" => \false, "c" => 0, "current_page" => 0];
+	public final function addFloatingText()
+    {
+		if($this->config()->get(self::CONFIG_LEADERBOARD_POSITION) === "") return \false;
+		if(count($this->station()->getAll()) === 0) return \false;
+		
+		$title_1       = "§f============§f[§f§o§l§eNew§6Cli§dck§bGa§ame§r§o§2排§6行§a榜§r§f]§f===========§r";
+		$title_2       = "          §a♧§c⚔§e⚒§f>场地 §3{venues} §f[§c{type}§f]<§e⚒§c⚔§a♧§r";
+		$ranking       = "  - № §e第§a{val}§e名§f: {pn}  §e>>  §6{countdown}§bs内点击§c{clicktime}§b次§r";
+		$end           = "§f================--[§e{current}§d/§b{total}§f页]--================§r";
+		$line_break    = "\n";
+		$inhalt = "";
+		
+		if((count($this->temp_page["all_key"]) !== count($this->station()->getAll())) && !$this->temp_page["start"])
+		{
+			foreach($this->station()->getAll() as $venues => $data) $this->temp_page["all_key"][] = $venues;
+			$this->temp_page["start"] = \true;
+		}
+		
+		foreach($this->temp_page["all_key"] as $venues)
+		{
+			if(!$this->station()->exists($venues)) unset($this->temp_page["all_key"][array_search($venues, $this->temp_page["all_key"])]);
+			$data = $this->station()->get($venues);
+			$inhalt .= str_replace(["{venues}", "{type}"], [$venues, (($data["ban_win10"]) ? "仅PE" : "开放式")], $title_2).$line_break;
+			$val = 1;
+			krsort($data["top"]);
+			foreach($data["top"] as $clicktime => $pn)
+			{
+				if($val < 4) $inhalt .= str_replace(["{val}", "{pn}", "{countdown}", "{clicktime}"], [$val++, $pn, $data["countdown"], $clicktime], $ranking).$line_break;
+			}
+			unset($this->temp_page["all_key"][array_search($venues, $this->temp_page["all_key"])]);
+			$this->temp_page["c"]++;
+			if($this->temp_page["c"] === $this->config()->get(self::CONFIG_LEADERBOARD_DISPLAY_PER_PAGE))
+			{
+				$this->temp_page["c"] = 0;
+				break;
+			}
+		}
+		$this->temp_page["current_page"]++;
+		// var_dump($this->temp_page);
+		
+		$inhalt = $title_1.$line_break.$inhalt.str_replace(["{current}", "{total}"], [$this->temp_page["current_page"], round(count($this->station()->getAll()) / $this->config()->get(self::CONFIG_LEADERBOARD_DISPLAY_PER_PAGE))], $end);
+		// var_dump($inhalt);
+		// $this->server->getLogger()->info($line_break.$inhalt);
+		
+		if(count($this->temp_page["all_key"]) === 0 || ($this->temp_page["current_page"] === round(count($this->station()->getAll()) / $this->config()->get(self::CONFIG_LEADERBOARD_DISPLAY_PER_PAGE)))) $this->temp_page = ["all_key" => [], "start" => \false, "c" => 0, "current_page" => 0];
+		
+		$pos = $this->getVector($this->config()->get(self::CONFIG_LEADERBOARD_POSITION));
+		$pos = new Position((float) $pos[0], (float) $pos[1], (float) $pos[2], $this->getServer()->getLevelByName($pos[3]));
+		$this->sendNetworkPacket($pos, $inhalt);
+        return \true;
+    }
+	
+	
+	public final function updateNetworkPacket()
+	{
+		if($this->config()->get(self::CONFIG_LEADERBOARD_POSITION) === "") return \false;
+		$pos = $this->getVector($this->config()->get(self::CONFIG_LEADERBOARD_POSITION));
+		$pos = new Position((float) $pos[0], (float) $pos[1], (float) $pos[2], $this->getServer()->getLevelByName($pos[3]));
+		$this->sendNetworkPacket($pos, "", "", true);
+	}
+	
+	
+	public final function sendNetworkPacket(Position $pos/* , int $entityId */, string $text, string $title = "", bool $remove = \false)
+	{
+		if(!isset($this->entityId)) $this->entityId = \pocketmine\entity\Entity::$entityCount++;
+		if($remove)
+		{
+			$pk = new \pocketmine\network\mcpe\protocol\RemoveEntityPacket();
+			if($this->getTSApi()->getKernelNetWorkPath() == 11) $pk->entityUniqueId = $this->entityId;
+			else $pk->eid = $this->entityId;
+			foreach($this->getServer()->getOnlinePlayers() as $p) $p->dataPacket($pk);
+			$this->eid = \null;
+			unset($pk);
+			return \true;
+		}
+		
+		$path = \class_exists("\\pocketmine\\item\\ItemFactory", \false) ? 11 : (\class_exists("\\pocketmine\\item\\Item", \false) ? 10 : \false);
+		
+		$pk = new \pocketmine\network\mcpe\protocol\AddPlayerPacket();
+		$pk->uuid            = \pocketmine\utils\UUID::fromRandom();
+		$pk->username        = $title . ($text !== "" ? "\n".$text : "");
+		$pk->item            = ($path == 10) ? Item::get(\pocketmine\item\Item::AIR) : ItemF::get(\pocketmine\item\Item::AIR, 0, 0);
+		if($this->getTSApi()->getKernelNetWorkPath() == 11)
+		{
+			// 兼容1.4及以上PMMP版本;
+			$pk->entityRuntimeId = $this->entityId;
+			$pk->position        = $pos;
+			$flags               = (1 << Entity::DATA_FLAG_IMMOBILE);
+			$pk->metadata = 
+			[
+				Entity::DATA_FLAGS => [Entity::DATA_TYPE_LONG, $flags],
+				Entity::DATA_SCALE => [Entity::DATA_TYPE_FLOAT, 0.01]
+			];
+		}
+		foreach($this->getServer()->getOnlinePlayers() as $p) $p->dataPacket($pk);
+		unset($pk);
+		return \true;
+	}
+	
+	
+	public final function shutdownFloatingText()
+	{
+		$this->tsapi->getTaskManager()->cancelCallbackTask("addFloatingText");
+		$this->tsapi->getTaskManager()->cancelCallbackTask("updateNetworkPacket");
+	}
 	
 	
 	
@@ -204,15 +336,12 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 	{
 		$n = $e->getPlayer()->getName();
 		$data = $this->getTempPlayerData($n);
-		if($data)
+		if($data && $data["isJoin"])
 		{
-			if($data["isJoin"])
+			if($this->isPlayerInTempStation($n, $data["station"]))
 			{
-				if($this->isPlayerInTempStation($n, $data["station"]))
-				{
-					$this->removePlayerInStation($n, $data["station"]);
-					$this->resetStation($data["station"]);
-				}
+				$this->removePlayerInStation($n, $data["station"]);
+				$this->resetStation($data["station"]);
 			}
 		}
 		unset($this->temp_player_data[$n], $data, $n);
@@ -264,7 +393,8 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 			
 			$chache_info = $this->getServer()->getLevelByName($ln);
 			$chache_info->setBlock(new Vector3($x, $y, $z), new Gold);
-			$chache_info->setBlock(new Vector3($x + self::XDISTANCE, $y + self::GYDISTANCE, $z), new Glass);
+			$chache_info->setBlock(new Vector3($x + self::XDISTANCE, $y + self::GYDISTANCE, $z), 
+			((defined('\pocketmine\Name') && (\pocketmine\Name === "Altay")) ? new Glass(Glass::GLASS) : new Glass));
 			$chache_info->setBlock(new Vector3($x + self::XDISTANCE, $y + self::QYDISTANCE, $z), new Quartz($quartz));
 			
 			
@@ -574,10 +704,17 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 			$data                       = $this->getTempPlayerData($player_name);
 			$s_con                      = $this->station()->get($station_id);
 			$s_con["play_time"]         = $s_con["play_time"] + 1;
-			$s_con["top"][$player_name] = $data["clicktime"];
+			// $s_con["top"][$player_name] = $data["clicktime"];
+			$s_con["top"][$data["clicktime"]] = $player_name;
 			$level                      = $this->getLevelFromTempStation($station_id);
 			$this->station()->setNested($station_id.".play_time", $s_con["play_time"]);
-			$this->station()->setNested($station_id.".top", $s_con["top"]);
+			
+			if($data["clicktime"] > 0)
+			{
+				krsort($s_con["top"]);     // 对数组进行降序排列;
+				if(count($s_con["top"]) > 3) array_pop($s_con["top"]);  // 移除数组中最后一个元素;
+				$this->station()->setNested($station_id.".top", $s_con["top"]);
+			}
 			
 			$this->server->getLogger()->info(self::NORMAL_PRE."§a玩家 §b{$player_name} §a在世界 §d{$level} §a的游戏场地 §e{$station_id} §a的数据已保存.");
 			$this->server->getLogger()->info(self::NORMAL_PRE."§b{$player_name} §e本次的点击次数: §a".$data["clicktime"]);
@@ -620,6 +757,9 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 		}
 	}
 	
+	
+	
+	
 #---[CONFIG FUNCTIONS]--------------------------------------------------------------------------------------------#
 	public final function config() : Config
 	{
@@ -628,6 +768,10 @@ class Main extends \pocketmine\plugin\PluginBase implements \pocketmine\event\Li
 	public final function station() : Config
 	{
 		return $this->station;
+	}
+	public final function getVector(string $index) : array
+	{
+		return explode(self::VECTOR_DIVISION, $index);
 	}
 	
 #---[OTHER FUNCTIONS]--------------------------------------------------------------------------------------------#
