@@ -1,3 +1,7 @@
+<img src="https://github.com/Tommy131/NewClickGame/blob/master/resources/S81124-230348.jpg?raw=true" alt="NewClickGame_Description1.png"/>
+<img src="https://github.com/Tommy131/NewClickGame/blob/master/resources/S81124-053026.jpg?raw=true" alt="NewClickGame_Description2.png"/>
+
+
 # NewClickGame
 A Plugins for PocketMine-MP. NewClickGame by Teaclon/TeaTech. This is a super Game in PMMP Server!
 
